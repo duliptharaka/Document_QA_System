@@ -107,7 +107,6 @@ flowchart LR
 | `requirements.txt` | Python dependencies |
 | `.env.example` | Template for `.env` (`OPENAI_API_KEY`) |
 | `README.md` | This file — full project documentation |
-| `README.short.md` | Short-form README with testing & evaluation observations |
 | `LICENSE` | MIT license text |
 
 ```
@@ -122,8 +121,7 @@ Document Q&A System/
 ├── eval_set.json           # Mini eval set (5 Q&A pairs)
 ├── requirements.txt
 ├── LICENSE
-├── README.md
-└── README.short.md         # Short-form README + eval observations
+└── README.md
 ```
 
 ---
