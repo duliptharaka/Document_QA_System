@@ -1,42 +1,12 @@
 <div align="center">
 
-# RAG-Powered Document Q&A — Short README
+# RAG-Powered Document Q&A — README
 
 *Testing & evaluation observations for the PDF Q&A pipeline.*
-
-[![Python](https://img.shields.io/badge/Python-3.14-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![LangChain](https://img.shields.io/badge/LangChain-1.2-1C3C3C?logo=langchain&logoColor=white)](https://python.langchain.com/)
-[![OpenAI](https://img.shields.io/badge/OpenAI-gpt--4o--mini-412991?logo=openai&logoColor=white)](https://platform.openai.com/docs/models)
-[![ChromaDB](https://img.shields.io/badge/ChromaDB-local-FF6F61?logo=databricks&logoColor=white)](https://docs.trychroma.com/)
 
 </div>
 
 > Full documentation lives in [`README.md`](README.md). This file is a condensed tour focused on **what we tested**, **what we observed**, and **what to watch out for**.
-
-## 60-second pitch
-
-A single-script RAG pipeline over **6 PDF research papers** (power-system topology, PMU/synchrophasor graph models, LVQ neural-network branch-event ID). Load → chunk → embed → retrieve → generate grounded answers with inline citations → evaluate.
-
-| Piece | Choice |
-|---|---|
-| Loader | `PyPDFDirectoryLoader` (one `Document` per page) |
-| Splitter | `RecursiveCharacterTextSplitter` (1000 / 150) |
-| Embeddings | OpenAI `text-embedding-3-small` (1536-dim) |
-| Vector DB | ChromaDB (local, persisted) |
-| LLM | `gpt-4o-mini`, `temperature=0`, `k = 6` |
-| Eval | 5-item hand-curated set with 1 refusal test |
-
-## Quick start
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-Copy-Item .env.example .env          # then paste your OPENAI_API_KEY
-python rag.py                        # OR: jupyter notebook rag_walkthrough.ipynb
-```
-
----
 
 ## Testing methodology
 
