@@ -1,16 +1,86 @@
 <div align="center">
 
-# RAG-Powered Q&A System
+# RAG-Powered Document Q&A System
 
 **A single-script Retrieval-Augmented Generation pipeline over local PDF research papers.**
 
 *Built end-to-end: load → chunk → embed → retrieve → generate → evaluate.*
 
+[![Python](https://img.shields.io/badge/Python-3.14-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![LangChain](https://img.shields.io/badge/LangChain-1.2-1C3C3C?logo=langchain&logoColor=white)](https://python.langchain.com/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-gpt--4o--mini-412991?logo=openai&logoColor=white)](https://platform.openai.com/docs/models)
+[![ChromaDB](https://img.shields.io/badge/ChromaDB-local-FF6F61?logo=databricks&logoColor=white)](https://docs.trychroma.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 </div>
+
+## At a glance
+
+| | |
+|:---|:---|
+| **Corpus** | 6 PDFs on power-system topology, PMU/synchrophasor graph models, and LVQ neural-network branch-event identification. |
+| **Loader** | `PyPDFDirectoryLoader` (via `pypdf`) — yields **one `Document` per page** (49 pages from 6 PDFs). |
+| **Chunking** | `RecursiveCharacterTextSplitter` (1000 chars / 150 overlap) → **244 chunks**. |
+| **Embeddings** | OpenAI `text-embedding-3-small` (1536-dim). |
+| **Vector store** | Local, persisted **ChromaDB** (`./chroma_db`, collection `papers`). |
+| **Generation** | `RetrievalQA` (chain_type=`stuff`) + `gpt-4o-mini` at `temperature=0`, top-k = **6**. |
+| **Grounding** | Custom prompt forbids invention; answers must cite sources inline as `[source: <filename> p.<page>]`. |
+| **Evaluation** | 5-item eval set with retrieval / faithfulness / correctness scorecard (incl. one refusal test). |
 
 ---
 
-## Tech Stack
+## Pipeline at a glance
+
+```
+┌─────────────┐   ┌────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌────────────┐
+│  1. Load    │──▶│  2. Chunk  │──▶│  3. Embed &  │──▶│  4. Retrieve │──▶│  5. Generate │──▶│ 6. Evaluate│
+│ PyPDFDir.   │   │ Recursive  │   │     Store    │   │  similarity  │   │ RetrievalQA  │   │ R / F / C  │
+│  Loader     │   │ Splitter   │   │  Chroma +    │   │    search    │   │   + prompt   │   │  scorecard │
+└─────────────┘   └────────────┘   │  OpenAI emb. │   └──────────────┘   └──────────────┘   └────────────┘
+                                   └──────────────┘
+```
+
+| Step | What it produces |
+|---|---|
+| 1. Load | 49 page-level `Document`s from 6 PDFs |
+| 2. Chunk | 244 chunks (138–1000 chars) |
+| 3. Embed & store | 244 vectors in `./chroma_db` |
+| 4. Retrieve | Top-k chunks per query (validated before the LLM) |
+| 5. Generate | Grounded answers with inline source citations |
+| 6. Evaluate | Retrieval / faithfulness / correctness scorecard |
+
+---
+
+## How it works
+
+```mermaid
+flowchart LR
+  subgraph Local["Local filesystem"]
+    PDFs[(Documents/*.pdf)]
+    CDB[(chroma_db/)]
+  end
+  subgraph Script["rag.py (single script)"]
+    L[Loader<br/>PyPDFDirectoryLoader]
+    C[Splitter<br/>RecursiveCharacterTextSplitter]
+    E[Embedder<br/>text-embedding-3-small]
+    R[Retriever<br/>similarity_search k=6]
+    G[RetrievalQA<br/>gpt-4o-mini · T=0]
+    V[Evaluator<br/>eval_set.json]
+  end
+  subgraph External["OpenAI API"]
+    EMB[(Embeddings)]
+    LLM[(Chat completions)]
+  end
+  PDFs --> L --> C --> E
+  E --> EMB
+  E --> CDB
+  CDB --> R --> G --> LLM
+  V --> G
+```
+
+---
+
+## Tech stack
 
 | Layer | Tool | Version / Model | Role |
 |---|---|---|---|
@@ -23,30 +93,22 @@
 | LLM | [OpenAI](https://platform.openai.com/docs/models) | `gpt-4o-mini` (`temperature=0`) | Grounded answer generation |
 | Config | [`python-dotenv`](https://pypi.org/project/python-dotenv/) | — | Load `OPENAI_API_KEY` from `.env` |
 
-## Pipeline at a Glance
+---
+
+## Repository layout
+
+| Path | Role |
+|------|------|
+| `rag.py` | Single-script pipeline (Steps 1–6) |
+| `Documents/` | Source PDFs (corpus) |
+| `chroma_db/` | Persisted Chroma vector store (auto-generated, gitignored) |
+| `eval_set.json` | Mini eval set (5 Q&A pairs) |
+| `requirements.txt` | Python dependencies |
+| `.env.example` | Template for `.env` (`OPENAI_API_KEY`) |
+| `LICENSE` | MIT license text |
 
 ```
-           ┌─────────────┐   ┌────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌────────────┐
-PDFs  ───▶ │  1. Load    │──▶│  2. Chunk  │──▶│  3. Embed &  │──▶│  4. Retrieve │──▶│  5. Generate │──▶│ 6. Evaluate│
-           │ PyPDFDir.   │   │ Recursive  │   │     Store    │   │  similarity  │   │ RetrievalQA  │   │ R / F / C  │
-           │  Loader     │   │ Splitter   │   │  Chroma +    │   │    search    │   │   + prompt   │   │  scorecard │
-           └─────────────┘   └────────────┘   │  OpenAI emb. │   └──────────────┘   └──────────────┘   └────────────┘
-                                              └──────────────┘
-```
-
-| Step | What it produces |
-|---|---|
-| 1. Load | 49 page-level `Document`s from 6 PDFs |
-| 2. Chunk | 244 chunks (138–1000 chars) |
-| 3. Embed & store | 244 vectors in `./chroma_db` |
-| 4. Retrieve | Top-k chunks per query (validated before the LLM) |
-| 5. Generate | Grounded answers with inline source citations |
-| 6. Evaluate | Retrieval / faithfulness / correctness scorecard |
-
-## Project Structure
-
-```
-Assignment 2/
+Document Q&A System/
 ├── Documents/              # Source PDFs (corpus)
 ├── chroma_db/              # Persisted Chroma vector store (auto-generated, gitignored)
 ├── .venv/                  # Virtual environment (gitignored)
@@ -55,10 +117,39 @@ Assignment 2/
 ├── rag.py                  # Single script — the whole pipeline
 ├── eval_set.json           # Mini eval set (5 Q&A pairs)
 ├── requirements.txt
+├── LICENSE
 └── README.md
 ```
 
-## Setup
+---
+
+## Prerequisites
+
+- **Python** 3.11+ (developed on 3.14)
+- **OpenAI API key** (used for both embeddings and `gpt-4o-mini`)
+- Windows PowerShell examples below; equivalent `bash` commands work on macOS/Linux.
+
+---
+
+## Environment variables
+
+Configuration is loaded from a root `.env` file via `python-dotenv`.
+
+| Variable | Required | Description |
+|----------|:--------:|-------------|
+| `OPENAI_API_KEY` | Yes | OpenAI API key. Used for both the embedding model and the chat model. |
+
+Copy the template and fill in your key:
+
+```env
+OPENAI_API_KEY=sk-...
+```
+
+> `.env` is gitignored — never commit your real key.
+
+---
+
+## Local setup
 
 ```powershell
 # 1. Create and activate the virtual environment
@@ -75,6 +166,17 @@ Copy-Item .env.example .env
 # 4. Run the pipeline
 python rag.py
 ```
+
+### Running the full pipeline
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python rag.py
+```
+
+The script runs Steps 1–6 end-to-end (load → chunk → embed/store → retrieval test → RAG Q&A → evaluation) and prints results for each step. On subsequent runs, the embedding step is skipped (Chroma store is reused); **delete `chroma_db/` to force a rebuild** after changing chunking or the embedding model.
+
+---
 
 ## Corpus
 
@@ -146,7 +248,7 @@ Three test queries were hand-picked to target distinct papers in the corpus:
 
 For each query, the top **k=3** chunks are retrieved via `vs.similarity_search(query, k=3)`.
 
-### Retrieval Relevance Analysis
+### Retrieval relevance analysis
 
 #### Q1 — Topology processing
 
@@ -185,7 +287,7 @@ Paper-level precision is perfect — every top-ranked hit came from the correct 
 
 Retrieval quality is strong enough to proceed to the generation step.
 
-## Step 5 — Build the RAG Chain
+## Step 5 — Build the RAG chain
 
 **Goal:** wire the retriever into an LLM with a custom prompt, so the model answers strictly from retrieved context and cites its sources.
 
@@ -246,37 +348,51 @@ All three answers are grounded in the retrieved context, include inline `[source
 
 ### Grading rubric (auto-graded)
 
-- **Retrieval ✅** — at least one expected source file appears in the retrieved chunks (waived for refusal questions).
-- **Faithfulness ✅** — the answer cites at least one of the retrieved files inline AND is not a refusal (for refusal questions, faithfulness ✅ = model correctly refused).
-- **Correctness ✅** — all expected keywords appear in the answer (for the refusal question, correctness ✅ = the answer contains "I don't know").
+| Dimension | Pass condition |
+|---|---|
+| **Retrieval** | At least one expected source file appears in the retrieved chunks (waived for refusal questions). |
+| **Faithfulness** | The answer cites at least one of the retrieved files inline AND is not a refusal. For refusal questions, faithfulness passes when the model correctly refuses. |
+| **Correctness** | All expected keywords appear in the answer. For the refusal question, correctness passes when the answer contains *"I don't know"*. |
 
 ### Results
 
 | # | Retrieval | Faithfulness | Correctness | Notes |
-|---|---|---|---|---|
-| 1 | ✅ | ✅ | ✅ | Answer: *"PMUs collect data at a rate of 30 Hz..."* |
-| 2 | ✅ | ✅ | ✅ | Answer: *"...two-area four-machine power system model on a real-time digital simulator (RTDS)..."* |
-| 3 | ✅ | ✅ | ✅ | Answer: *"Learning Vector Quantization (LVQ) neural network... IEEE 12-bus benchmark..."* |
-| 4 | ✅ | ✅ | ✅ | Answer: *"A cellular computational network (CCN)..."* |
-| 5 | ✅ | ✅ | ✅ | Model correctly refused: *"I don't know based on the provided documents."* |
+|---|:---:|:---:|:---:|---|
+| 1 | PASS | PASS | PASS | Answer: *"PMUs collect data at a rate of 30 Hz..."* |
+| 2 | PASS | PASS | PASS | Answer: *"...two-area four-machine power system model on a real-time digital simulator (RTDS)..."* |
+| 3 | PASS | PASS | PASS | Answer: *"Learning Vector Quantization (LVQ) neural network... IEEE 12-bus benchmark..."* |
+| 4 | PASS | PASS | PASS | Answer: *"A cellular computational network (CCN)..."* |
+| 5 | PASS | PASS | PASS | Model correctly refused: *"I don't know based on the provided documents."* |
 
 **Scorecard:**
 
-- Retrieval: **5 / 5**
-- Faithfulness: **5 / 5**
-- Correctness: **5 / 5**
+| Metric | Score |
+|---|---|
+| Retrieval | **5 / 5** |
+| Faithfulness | **5 / 5** |
+| Correctness | **5 / 5** |
 
 ### Caveats
 
-- Auto-grading is a coarse filter (keyword overlap, filename presence). It is **not** a substitute for human review — the user should spot-check each answer against the PDFs, especially for longer or more nuanced questions.
+- Auto-grading is a coarse filter (keyword overlap, filename presence). It is **not** a substitute for human review — spot-check each answer against the PDFs, especially for longer or more nuanced questions.
 - The eval set is intentionally small (5 items) and skews toward factual questions. For a production system you'd want 30–100 items covering multi-hop questions, adversarial / trick questions, and more refusal tests.
 - Faithfulness here only checks whether a retrieved source is cited; it does not verify that each specific claim in the answer maps to a specific chunk. A stronger check would use an LLM-as-judge pass against the retrieved context.
 
-## Running the Full Pipeline
+---
 
-```powershell
-.\.venv\Scripts\Activate.ps1
-python rag.py
-```
+## Troubleshooting
 
-The script runs Steps 1–6 end-to-end (load → chunk → embed/store → retrieval test → RAG Q&A → evaluation) and prints results for each step. On subsequent runs, the embedding step is skipped (Chroma store is reused); delete `chroma_db/` to force a rebuild after changing chunking or the embedding model.
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| `openai.AuthenticationError` / 401 | `OPENAI_API_KEY` missing or invalid | Create `.env` from `.env.example` and paste a valid key; make sure the shell was restarted so `python-dotenv` picks it up. |
+| Model returns *"I don't know"* on answerable questions | Top-k retrieved only title/references pages | Increase `TOP_K` in `rag.py` (already raised from 4 → 6), or strip references pages during loading. |
+| Chroma reports 0 vectors even after a run | Previous run errored before `add_documents` completed | Delete `chroma_db/` and rerun `python rag.py`. |
+| Inline citations appear as literal `<filename>` | `document_prompt` not wired into the chain | Keep the `document_prompt` argument in `build_qa_chain` — it injects `[source: ... p.X]` before each chunk. |
+| `ModuleNotFoundError: langchain_classic` | Dependencies not installed in the active venv | Activate `.venv` then `pip install -r requirements.txt`. |
+| Answers changed after tweaking chunking/embeddings | Old vectors still cached | Delete `chroma_db/` to force a full re-embed. |
+
+---
+
+## License
+
+This project is released under the **MIT License**. See the [`LICENSE`](LICENSE) file in the repository root for the full text.
