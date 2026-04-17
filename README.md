@@ -100,11 +100,14 @@ flowchart LR
 | Path | Role |
 |------|------|
 | `rag.py` | Single-script pipeline (Steps 1–6) |
+| `rag_walkthrough.ipynb` | Interactive notebook companion — same pipeline, one cell per step, with explanations |
 | `Documents/` | Source PDFs (corpus) |
 | `chroma_db/` | Persisted Chroma vector store (auto-generated, gitignored) |
 | `eval_set.json` | Mini eval set (5 Q&A pairs) |
 | `requirements.txt` | Python dependencies |
 | `.env.example` | Template for `.env` (`OPENAI_API_KEY`) |
+| `README.md` | This file — full project documentation |
+| `README.short.md` | Short-form README with testing & evaluation observations |
 | `LICENSE` | MIT license text |
 
 ```
@@ -115,10 +118,12 @@ Document Q&A System/
 ├── .env                    # OPENAI_API_KEY (gitignored)
 ├── .env.example            # Template for .env
 ├── rag.py                  # Single script — the whole pipeline
+├── rag_walkthrough.ipynb   # Interactive step-by-step notebook
 ├── eval_set.json           # Mini eval set (5 Q&A pairs)
 ├── requirements.txt
 ├── LICENSE
-└── README.md
+├── README.md
+└── README.short.md         # Short-form README + eval observations
 ```
 
 ---
@@ -175,6 +180,17 @@ python rag.py
 ```
 
 The script runs Steps 1–6 end-to-end (load → chunk → embed/store → retrieval test → RAG Q&A → evaluation) and prints results for each step. On subsequent runs, the embedding step is skipped (Chroma store is reused); **delete `chroma_db/` to force a rebuild** after changing chunking or the embedding model.
+
+### Interactive walkthrough (Jupyter)
+
+Prefer to step through the pipeline cell-by-cell with explanations alongside the code? Open the companion notebook:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+jupyter notebook rag_walkthrough.ipynb
+```
+
+`rag_walkthrough.ipynb` mirrors `rag.py` step-for-step (same constants, same prompt, same grader) but splits each stage into its own cell with markdown explaining the **why** behind it. It also includes an editable *"Try your own question"* cell at the end so you can probe the system without touching the pipeline code. Select the `.venv` kernel and Run All.
 
 ---
 
