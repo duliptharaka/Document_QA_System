@@ -6,7 +6,6 @@
 
 </div>
 
-> Full documentation lives in [`README.md`](README.md). This file is a condensed tour focused on **what we tested**, **what we observed**, and **what to watch out for**.
 
 ## Testing methodology
 
@@ -70,9 +69,6 @@ citations resolved to real filenames + page numbers on every call. Non-obvious, 
 
 With the constraint *"Use ONLY the context below ... If the context does not contain the answer, say 'I don't know based on the provided documents.' Do not invent facts,"* **zero hallucinations** were observed in the eval runs. The model also correctly refused the planted refusal question.
 
-### 5. Chroma caching cuts cost to effectively zero after first run
-
-First run: embeds 244 chunks (1 small bill). Every run after that reuses `./chroma_db/`. The only way to regenerate embeddings is to delete the folder — which we make explicit in the README so people changing chunking/embedding know to do it.
 
 ---
 
@@ -91,29 +87,3 @@ Auto-graded on `eval_set.json` (5 items, 1 refusal).
 **Scorecard:** Retrieval **5 / 5** · Faithfulness **5 / 5** · Correctness **5 / 5**.
 
 ---
-
-## Caveats
-
-- Auto-grading is **keyword overlap + filename presence** — a filter, not a judge. Spot-check answers manually against the PDFs for longer or nuanced questions.
-- The eval set is **small (5 items)** and skewed factual. A production pipeline wants 30–100 items with multi-hop questions, adversarial / trick questions, wrong-paper distractors, and more refusal tests.
-- Faithfulness only checks that a retrieved source is cited — it does **not** verify each specific claim maps to a specific chunk. A stronger check would be an **LLM-as-judge** pass against the retrieved context.
-- The corpus is narrow (6 papers, one subfield). Scaling up would re-expose retrieval issues (references-page effect, cross-paper disambiguation, topic drift) that are latent here.
-
----
-
-## What to try next
-
-| Experiment | Expected effect |
-|---|---|
-| `chunk_size ∈ {500, 2000}` | Smaller → higher precision, more fragmentation; larger → more context per hit, less precise |
-| `TOP_K ∈ {3, 10}` | Smaller → tighter context, more refusals; larger → risks distracting the LLM with noisy chunks |
-| Swap to `text-embedding-3-large` (3072-dim) | Higher retrieval quality, ~6× embedding cost. Must delete `chroma_db/` first. |
-| Strip references pages during load | Should eliminate the recall-trap pattern that forced `k = 6` |
-| LLM-as-judge faithfulness pass | Far more reliable than keyword-based grading — worth it once eval set grows past ~10 items |
-| Expand `eval_set.json` to 30+ items | Surfaces multi-hop and adversarial failure modes the current set cannot detect |
-
----
-
-## License
-
-MIT — see [`LICENSE`](LICENSE).
