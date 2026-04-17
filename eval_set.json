@@ -1,0 +1,51 @@
+[
+  {
+    "id": 1,
+    "question": "At what sampling rate (in Hz) do PMUs collect data in the synchrophasor dataset used for data-driven graph construction?",
+    "expected_answer": "30 Hz.",
+    "expected_sources": [
+      "Data-Driven_Graph_Construction_of_Power_Flow_Graphs_for_Electric_Power_Transmission_Networks.pdf"
+    ],
+    "expected_keywords": ["30 hz"],
+    "refusal_expected": false
+  },
+  {
+    "id": 2,
+    "question": "What test system was used on the RTDS to generate the synchrophasor dataset for graph construction?",
+    "expected_answer": "A two-area four-machine power system model simulated on a real-time digital simulator (RTDS).",
+    "expected_sources": [
+      "Data-Driven_Graph_Construction_of_Power_Flow_Graphs_for_Electric_Power_Transmission_Networks.pdf"
+    ],
+    "expected_keywords": ["two-area", "four-machine"],
+    "refusal_expected": false
+  },
+  {
+    "id": 3,
+    "question": "Which neural network algorithm is proposed for online identification of power system branch events, and on which IEEE benchmark is it demonstrated?",
+    "expected_answer": "Learning Vector Quantization (LVQ) neural network, demonstrated on the IEEE 12-bus benchmark power system.",
+    "expected_sources": [
+      "LVQ_Neural_Network_for_Online_Identification_of_Power_System_Network_Branch_Events.pdf"
+    ],
+    "expected_keywords": ["lvq", "12-bus"],
+    "refusal_expected": false
+  },
+  {
+    "id": 4,
+    "question": "What distributed computational architecture is used to distribute the load of the branch event identification algorithm?",
+    "expected_answer": "A cellular computational network (CCN).",
+    "expected_sources": [
+      "LVQ_Neural_Network_for_Online_Identification_of_Power_System_Network_Branch_Events.pdf",
+      "Distributed_Identification_of_Power_System_Network_Branch_Events.pdf"
+    ],
+    "expected_keywords": ["cellular computational network"],
+    "refusal_expected": false
+  },
+  {
+    "id": 5,
+    "question": "Do the provided papers propose using deep reinforcement learning for power system control?",
+    "expected_answer": "I don't know based on the provided documents. (Deliberate refusal test — topic not covered in the corpus.)",
+    "expected_sources": [],
+    "expected_keywords": ["i don't know"],
+    "refusal_expected": true
+  }
+]
