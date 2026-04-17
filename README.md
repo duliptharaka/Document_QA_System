@@ -348,21 +348,19 @@ All three answers are grounded in the retrieved context, include inline `[source
 
 ### Grading rubric (auto-graded)
 
-| Dimension | Pass condition |
-|---|---|
-| **Retrieval** | At least one expected source file appears in the retrieved chunks (waived for refusal questions). |
-| **Faithfulness** | The answer cites at least one of the retrieved files inline AND is not a refusal. For refusal questions, faithfulness passes when the model correctly refuses. |
-| **Correctness** | All expected keywords appear in the answer. For the refusal question, correctness passes when the answer contains *"I don't know"*. |
+- **Retrieval ✅** — at least one expected source file appears in the retrieved chunks (waived for refusal questions).
+- **Faithfulness ✅** — the answer cites at least one of the retrieved files inline AND is not a refusal (for refusal questions, faithfulness ✅ = model correctly refused).
+- **Correctness ✅** — all expected keywords appear in the answer (for the refusal question, correctness ✅ = the answer contains "I don't know").
 
 ### Results
 
 | # | Retrieval | Faithfulness | Correctness | Notes |
 |---|:---:|:---:|:---:|---|
-| 1 | PASS | PASS | PASS | Answer: *"PMUs collect data at a rate of 30 Hz..."* |
-| 2 | PASS | PASS | PASS | Answer: *"...two-area four-machine power system model on a real-time digital simulator (RTDS)..."* |
-| 3 | PASS | PASS | PASS | Answer: *"Learning Vector Quantization (LVQ) neural network... IEEE 12-bus benchmark..."* |
-| 4 | PASS | PASS | PASS | Answer: *"A cellular computational network (CCN)..."* |
-| 5 | PASS | PASS | PASS | Model correctly refused: *"I don't know based on the provided documents."* |
+| 1 | ✅ | ✅ | ✅ | Answer: *"PMUs collect data at a rate of 30 Hz..."* |
+| 2 | ✅ | ✅ | ✅ | Answer: *"...two-area four-machine power system model on a real-time digital simulator (RTDS)..."* |
+| 3 | ✅ | ✅ | ✅ | Answer: *"Learning Vector Quantization (LVQ) neural network... IEEE 12-bus benchmark..."* |
+| 4 | ✅ | ✅ | ✅ | Answer: *"A cellular computational network (CCN)..."* |
+| 5 | ✅ | ✅ | ✅ | Model correctly refused: *"I don't know based on the provided documents."* |
 
 **Scorecard:**
 
