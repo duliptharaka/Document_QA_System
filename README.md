@@ -14,6 +14,10 @@
 
 </div>
 
+<img width="3567" height="1708" alt="image" src="https://github.com/user-attachments/assets/94914ad7-17ad-44e8-a298-4d763a64e2cc" />
+
+</div>
+
 ## At a glance
 
 | | |
