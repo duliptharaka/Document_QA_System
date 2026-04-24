@@ -22,7 +22,7 @@
 | **Loader** | `PyPDFDirectoryLoader` (via `pypdf`) — yields **one `Document` per page** (49 pages from 6 PDFs). |
 | **Chunking** | `RecursiveCharacterTextSplitter` (1000 chars / 150 overlap) → **244 chunks**. |
 | **Embeddings** | OpenAI `text-embedding-3-small` (1536-dim). |
-| **Vector store** | Local, persisted **ChromaDB** (`./chroma_db`, collection `papers`). |
+| **Vector store** | Local, persisted **ChromaDB** (`Backend/chroma_db`, collection `papers`). |
 | **Generation** | `RetrievalQA` (chain_type=`stuff`) + `gpt-4o-mini` at `temperature=0`, top-k = **6**. |
 | **Grounding** | Custom prompt forbids invention; answers must cite sources inline as `[source: <filename> p.<page>]`. |
 | **Evaluation** | 5-item eval set with retrieval / faithfulness / correctness scorecard (incl. one refusal test). |
@@ -44,7 +44,7 @@
 |---|---|
 | 1. Load | 49 page-level `Document`s from 6 PDFs |
 | 2. Chunk | 244 chunks (138–1000 chars) |
-| 3. Embed & store | 244 vectors in `./chroma_db` |
+| 3. Embed & store | 244 vectors in `Backend/chroma_db` |
 | 4. Retrieve | Top-k chunks per query (validated before the LLM) |
 | 5. Generate | Grounded answers with inline source citations |
 | 6. Evaluate | Retrieval / faithfulness / correctness scorecard |
@@ -56,10 +56,10 @@
 ```mermaid
 flowchart LR
   subgraph Local["Local filesystem"]
-    PDFs[(Documents/*.pdf)]
-    CDB[(chroma_db/)]
+    PDFs[(Backend/Documents/*.pdf)]
+    CDB[(Backend/chroma_db/)]
   end
-  subgraph Script["rag.py (single script)"]
+  subgraph Script["Backend/rag.py (single script)"]
     L[Loader<br/>PyPDFDirectoryLoader]
     C[Splitter<br/>RecursiveCharacterTextSplitter]
     E[Embedder<br/>text-embedding-3-small]
@@ -99,11 +99,12 @@ flowchart LR
 
 | Path | Role |
 |------|------|
-| `rag.py` | Single-script pipeline (Steps 1–6) |
-| `rag_walkthrough.ipynb` | Interactive notebook companion — same pipeline, one cell per step, with explanations |
-| `Documents/` | Source PDFs (corpus) |
-| `chroma_db/` | Persisted Chroma vector store (auto-generated, gitignored) |
-| `eval_set.json` | Mini eval set (5 Q&A pairs) |
+| `Backend/rag.py` | Single-script pipeline (Steps 1–6) |
+| `Backend/rag_walkthrough.ipynb` | Interactive notebook companion — same pipeline, one cell per step, with explanations |
+| `Backend/Documents/` | Source PDFs (corpus) |
+| `Backend/chroma_db/` | Persisted Chroma vector store (auto-generated, gitignored) |
+| `Backend/eval_set.json` | Mini eval set (5 Q&A pairs) |
+| `Frontend/app.py` | Streamlit chat UI — upload PDFs and ask questions (session-scoped, no persistence) |
 | `requirements.txt` | Python dependencies |
 | `.env.example` | Template for `.env` (`OPENAI_API_KEY`) |
 | `README.md` | This file — full project documentation |
@@ -111,14 +112,17 @@ flowchart LR
 
 ```
 Document Q&A System/
-├── Documents/              # Source PDFs (corpus)
-├── chroma_db/              # Persisted Chroma vector store (auto-generated, gitignored)
-├── .venv/                  # Virtual environment (gitignored)
-├── .env                    # OPENAI_API_KEY (gitignored)
-├── .env.example            # Template for .env
-├── rag.py                  # Single script — the whole pipeline
-├── rag_walkthrough.ipynb   # Interactive step-by-step notebook
-├── eval_set.json           # Mini eval set (5 Q&A pairs)
+├── Backend/
+│   ├── Documents/              # Source PDFs (corpus)
+│   ├── chroma_db/              # Persisted Chroma vector store (auto-generated, gitignored)
+│   ├── rag.py                  # Single script — the whole pipeline
+│   ├── rag_walkthrough.ipynb   # Interactive step-by-step notebook
+│   └── eval_set.json           # Mini eval set (5 Q&A pairs)
+├── Frontend/
+│   └── app.py                  # Streamlit chat UI (session-scoped, no persistence)
+├── .venv/                      # Virtual environment (gitignored)
+├── .env                        # OPENAI_API_KEY (gitignored)
+├── .env.example                # Template for .env
 ├── requirements.txt
 ├── LICENSE
 └── README.md
@@ -167,17 +171,17 @@ Copy-Item .env.example .env
 # then edit .env and paste your real OPENAI_API_KEY
 
 # 4. Run the pipeline
-python rag.py
+python Backend/rag.py
 ```
 
 ### Running the full pipeline
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
-python rag.py
+python Backend/rag.py
 ```
 
-The script runs Steps 1–6 end-to-end (load → chunk → embed/store → retrieval test → RAG Q&A → evaluation) and prints results for each step. On subsequent runs, the embedding step is skipped (Chroma store is reused); **delete `chroma_db/` to force a rebuild** after changing chunking or the embedding model.
+The script runs Steps 1–6 end-to-end (load → chunk → embed/store → retrieval test → RAG Q&A → evaluation) and prints results for each step. On subsequent runs, the embedding step is skipped (Chroma store is reused); **delete `Backend/chroma_db/` to force a rebuild** after changing chunking or the embedding model.
 
 ### Interactive walkthrough (Jupyter)
 
@@ -185,16 +189,31 @@ Prefer to step through the pipeline cell-by-cell with explanations alongside the
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
-jupyter notebook rag_walkthrough.ipynb
+jupyter notebook Backend/rag_walkthrough.ipynb
 ```
 
-`rag_walkthrough.ipynb` mirrors `rag.py` step-for-step (same constants, same prompt, same grader) but splits each stage into its own cell with markdown explaining the **why** behind it. It also includes an editable *"Try your own question"* cell at the end so you can probe the system without touching the pipeline code. Select the `.venv` kernel and Run All.
+`Backend/rag_walkthrough.ipynb` mirrors `Backend/rag.py` step-for-step (same constants, same prompt, same grader) but splits each stage into its own cell with markdown explaining the **why** behind it. It also includes an editable *"Try your own question"* cell at the end so you can probe the system without touching the pipeline code. Select the `.venv` kernel and Run All.
+
+### Streamlit chat UI
+
+A minimal chat frontend lets you upload your own PDFs and ask questions against them. Each browser session gets its own in-memory index — nothing is persisted between sessions.
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+streamlit run Frontend/app.py
+```
+
+1. Upload one or more **PDFs** in the sidebar (only `.pdf` is accepted).
+2. Click **Process** to index them for the current session.
+3. Ask questions in the chat box. Answers cite `[source: <filename> p.<page>]` inline and list the sources used.
+
+> The frontend is independent of `Backend/Documents/` and `Backend/chroma_db/` — it never touches the persisted corpus.
 
 ---
 
 ## Corpus
 
-`Documents/` contains **6 PDFs** on power-system topology, graph models from synchrophasor/PMU data, and neural-network-based branch-event identification.
+`Backend/Documents/` contains **6 PDFs** on power-system topology, graph models from synchrophasor/PMU data, and neural-network-based branch-event identification.
 
 ---
 
@@ -232,11 +251,11 @@ jupyter notebook rag_walkthrough.ipynb
 
 **Embedding model:** `text-embedding-3-small` (OpenAI) — 1536-dim, cheap, high quality.
 
-**Vector store:** **ChromaDB**, persisted to `./chroma_db` in a collection called `papers`.
+**Vector store:** **ChromaDB**, persisted to `Backend/chroma_db` in a collection called `papers`.
 
 - On first run: embeds all 244 chunks and persists them.
 - On subsequent runs: reuses the existing store (no re-embedding, no extra API cost).
-- To force a rebuild: delete the `chroma_db/` folder.
+- To force a rebuild: delete the `Backend/chroma_db/` folder.
 
 **Output:**
 - Vectors stored: **244** (one per chunk)
@@ -397,11 +416,11 @@ All three answers are grounded in the retrieved context, include inline `[source
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
 | `openai.AuthenticationError` / 401 | `OPENAI_API_KEY` missing or invalid | Create `.env` from `.env.example` and paste a valid key; make sure the shell was restarted so `python-dotenv` picks it up. |
-| Model returns *"I don't know"* on answerable questions | Top-k retrieved only title/references pages | Increase `TOP_K` in `rag.py` (already raised from 4 → 6), or strip references pages during loading. |
-| Chroma reports 0 vectors even after a run | Previous run errored before `add_documents` completed | Delete `chroma_db/` and rerun `python rag.py`. |
+| Model returns *"I don't know"* on answerable questions | Top-k retrieved only title/references pages | Increase `TOP_K` in `Backend/rag.py` (already raised from 4 → 6), or strip references pages during loading. |
+| Chroma reports 0 vectors even after a run | Previous run errored before `add_documents` completed | Delete `Backend/chroma_db/` and rerun `python Backend/rag.py`. |
 | Inline citations appear as literal `<filename>` | `document_prompt` not wired into the chain | Keep the `document_prompt` argument in `build_qa_chain` — it injects `[source: ... p.X]` before each chunk. |
 | `ModuleNotFoundError: langchain_classic` | Dependencies not installed in the active venv | Activate `.venv` then `pip install -r requirements.txt`. |
-| Answers changed after tweaking chunking/embeddings | Old vectors still cached | Delete `chroma_db/` to force a full re-embed. |
+| Answers changed after tweaking chunking/embeddings | Old vectors still cached | Delete `Backend/chroma_db/` to force a full re-embed. |
 
 ---
 

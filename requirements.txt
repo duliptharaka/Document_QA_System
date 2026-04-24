@@ -6,3 +6,4 @@ langchain-openai
 langchain-chroma
 pypdf
 python-dotenv
+streamlit

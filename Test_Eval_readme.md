@@ -13,8 +13,8 @@ Two passes were used, in order, to catch different failure modes:
 
 | Pass | What it checks | Why it's done first |
 |---|---|---|
-| **1. Retrieval sanity check** (Step 4 of `rag.py`) | Does `similarity_search(query, k=3)` return chunks from the *right* paper? | Cheapest test. If retrieval is broken, no prompt tweak can save the LLM. |
-| **2. End-to-end auto-grading** (Step 6 of `rag.py`, `eval_set.json`) | Retrieval ✅ / Faithfulness ✅ / Correctness ✅ on 5 hand-curated items, including 1 refusal test | Confirms the full stack — not just retrieval — is behaving. |
+| **1. Retrieval sanity check** (Step 4 of `Backend/rag.py`) | Does `similarity_search(query, k=3)` return chunks from the *right* paper? | Cheapest test. If retrieval is broken, no prompt tweak can save the LLM. |
+| **2. End-to-end auto-grading** (Step 6 of `Backend/rag.py`, `Backend/eval_set.json`) | Retrieval ✅ / Faithfulness ✅ / Correctness ✅ on 5 hand-curated items, including 1 refusal test | Confirms the full stack — not just retrieval — is behaving. |
 
 ### Grading rubric (coarse but cheap)
 
@@ -74,7 +74,7 @@ With the constraint *"Use ONLY the context below ... If the context does not con
 
 ## Evaluation results
 
-Auto-graded on `eval_set.json` (5 items, 1 refusal).
+Auto-graded on `Backend/eval_set.json` (5 items, 1 refusal).
 
 | # | Question (abridged) | Retrieval | Faithfulness | Correctness |
 |---|---|:---:|:---:|:---:|

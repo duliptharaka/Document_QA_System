@@ -6,6 +6,7 @@ Flow: Load PDFs -> Chunk -> Embed & store in Chroma -> Retrieve -> LLM answer
 
 import json
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from langchain_community.document_loaders import PyPDFDirectoryLoader
@@ -15,16 +16,20 @@ from langchain_chroma import Chroma
 from langchain_classic.chains import RetrievalQA
 from langchain_core.prompts import PromptTemplate
 
-load_dotenv()
+# Resolve paths relative to this file (Backend/) so the script works no matter
+# which directory it's launched from (project root, Backend/, an IDE, etc.).
+BASE_DIR = Path(__file__).resolve().parent
+# .env lives one level up at the project root.
+load_dotenv(BASE_DIR.parent / ".env")
 
-DOCS_DIR = "Documents"
+DOCS_DIR = str(BASE_DIR / "Documents")
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 150
 EMBED_MODEL = "text-embedding-3-small"
 LLM_MODEL = "gpt-4o-mini"
-PERSIST_DIR = "chroma_db"
+PERSIST_DIR = str(BASE_DIR / "chroma_db")
 COLLECTION = "papers"
-EVAL_FILE = "eval_set.json"
+EVAL_FILE = str(BASE_DIR / "eval_set.json")
 # k=6 because top-4 sometimes pulled title/references pages and starved the LLM
 # of body content, producing "I don't know" on otherwise-answerable questions.
 TOP_K = 6
